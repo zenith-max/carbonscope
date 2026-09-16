@@ -8,10 +8,13 @@ from typing import Any
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "owid-co2-data.csv"
 PROCESSED_FILE = ROOT / "data" / "processed_dataset.json"
+FRONTEND_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
 EXCLUDED_COUNTRIES = {
     "World",
@@ -46,6 +49,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend() -> FileResponse:
+    index_file = FRONTEND_DIST / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return FileResponse(ROOT / "data" / "processed_dataset.json")
 
 
 @lru_cache(maxsize=1)

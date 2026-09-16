@@ -3,7 +3,7 @@ import Plot from 'react-plotly.js';
 import { AreaChart, Area, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line, Legend } from 'recharts';
 import { Globe, Search, Moon, Sun, TrendingUp } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const RANGE_PRESETS = [
   { label: '1750–2017', value: [1750, 2017] },
   { label: '1900–2017', value: [1900, 2017] },
