@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent
@@ -54,12 +54,25 @@ if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
 
-@app.get("/", include_in_schema=False)
-def serve_frontend() -> FileResponse:
+@app.get("/", include_in_schema=False, response_model=None)
+def serve_frontend():
     index_file = FRONTEND_DIST / "index.html"
     if index_file.exists():
         return FileResponse(index_file)
-    return FileResponse(ROOT / "data" / "processed_dataset.json")
+    return HTMLResponse(
+        """
+        <html>
+            <head><title>CarbonScope</title></head>
+            <body style="font-family: sans-serif; background: #0b0f0d; color: #ecf5ee; display: grid; place-items: center; height: 100vh; margin: 0;">
+                <div style="text-align: center; max-width: 520px; padding: 24px;">
+                    <h1 style="margin-bottom: 12px;">CarbonScope</h1>
+                    <p style="color: #c8d8ce;">Frontend build not found. Build the React app before deploy.</p>
+                </div>
+            </body>
+        </html>
+        """,
+        media_type="text/html",
+    )
 
 
 @lru_cache(maxsize=1)
