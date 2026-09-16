@@ -4,6 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from urllib.request import urlretrieve
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_FILE = ROOT / "data" / "owid-co2-data.csv"
 PROCESSED_FILE = ROOT / "data" / "processed_dataset.json"
 FRONTEND_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+DATA_SOURCE_URL = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
 
 EXCLUDED_COUNTRIES = {
     "Africa",
@@ -74,10 +76,22 @@ def serve_frontend():
     )
 
 
+def ensure_dataset_file() -> None:
+    DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if DATA_FILE.exists():
+        return
+
+    try:
+        urlretrieve(DATA_SOURCE_URL, DATA_FILE)
+    except Exception as exc:  # pragma: no cover - defensive fallback for deployment
+        raise FileNotFoundError(
+            f"Dataset file not found at {DATA_FILE} and failed to download from {DATA_SOURCE_URL}."
+        ) from exc
+
+
 @lru_cache(maxsize=1)
 def load_dataframe() -> pd.DataFrame:
-    if not DATA_FILE.exists():
-        raise FileNotFoundError(f"Dataset file not found at {DATA_FILE}")
+    ensure_dataset_file()
 
     df = pd.read_csv(DATA_FILE)
     df.columns = [str(col).strip() for col in df.columns]

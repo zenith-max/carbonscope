@@ -11,5 +11,3 @@ __pycache__/
 .DS_Store
 .env
 coverage/
-backend/data/*.csv
-backend/data/*.json
