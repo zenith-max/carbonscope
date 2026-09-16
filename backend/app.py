@@ -17,7 +17,6 @@ PROCESSED_FILE = ROOT / "data" / "processed_dataset.json"
 FRONTEND_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 
 EXCLUDED_COUNTRIES = {
-    "World",
     "Africa",
     "Asia",
     "Europe",
@@ -114,6 +113,7 @@ def load_global_series() -> pd.DataFrame:
 def list_countries_for_year(year: int) -> pd.DataFrame:
     df = load_dataframe()
     year_df = df[df["year"] == year].copy()
+    year_df = year_df[~year_df["country"].isin({"World", *EXCLUDED_COUNTRIES})]
     year_df = year_df[(year_df["co2"].notna()) & (year_df["co2"] > 0)]
     year_df = year_df[["country", "iso_code", "year", "co2", "population"]].copy()
     year_df = year_df.sort_values("co2", ascending=False).reset_index(drop=True)
@@ -228,6 +228,9 @@ def compare_countries(countries: str = Query(...)) -> dict[str, Any]:
 @app.get("/api/summary")
 def summary() -> dict[str, Any]:
     global_series = load_global_series().sort_values("year")
+    if global_series.empty:
+        raise HTTPException(status_code=500, detail="Global emissions series is empty; dataset could not load the World row.")
+
     latest_year = int(global_series["year"].max())
     latest_value = float(global_series[global_series["year"] == latest_year]["co2"].iloc[0] or 0)
     start_value = float(global_series[global_series["year"] == int(global_series["year"].min())]["co2"].iloc[0] or 0)
